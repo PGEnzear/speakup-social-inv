@@ -1,0 +1,227 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeleteReason {
+
+  selfDelete
+  blocked
+
+}
+
+model Attachment {
+  id Int @id @default(autoincrement())
+
+  url String
+
+  name   String
+  format String
+
+  size Int
+
+  user   User @relation(fields: [userId], references: [id], name: "user_attachments")
+  userId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Post   Post? @relation(fields: [postId], references: [id])
+  postId Int?
+}
+
+model Comment {
+  id Int @id @default(autoincrement())
+
+  text String
+
+  user   User @relation(fields: [userId], references: [id], name: "user_comments")
+  userId Int
+
+  post   Post @relation(fields: [postId], references: [id], name: "post_comments")
+  postId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id Int @id @default(autoincrement())
+
+  user   User @relation(fields: [userId], references: [id], name: "user_posts")
+  userId Int
+
+  reports Report[] @relation(name: "post_reports")
+
+  text String
+
+  attachments Attachment[]
+
+  comments Comment[] @relation(name: "post_comments")
+  likes    User[]    @relation(name: "user_likes")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id Int @id @default(autoincrement())
+
+  text String
+
+  user   User @relation(fields: [userId], references: [id], name: "user_messages")
+  userId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Group {
+  id Int @id @default(autoincrement())
+
+  name  String
+  photo String
+
+  creator   User @relation(fields: [creatorId], references: [id], name: "user_groupcreator")
+  creatorId Int
+
+  users User[] @relation(name: "user_groups")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Dialog {
+  id Int @id @default(autoincrement())
+
+  users User[] @relation(name: "user_dialogs")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Chat {
+  id Int @id @default(autoincrement())
+
+  users User[] @relation(name: "user_chats")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Report {
+  id Int @id @default(autoincrement())
+
+  user   User @relation(fields: [userId], references: [id], name: "user_reports")
+  userId Int
+
+  post   Post @relation(fields: [postId], references: [id], name: "post_reports")
+  postId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//User
+model AuthorizationInfo {
+  id Int @id @default(autoincrement())
+
+  password String
+  salt String
+
+  registerLocation String
+  registerIp String
+
+  user User @relation(fields: [userId], references: [id], name: "user_authorization_info")
+  userId Int @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuthSession {
+  id Int @id @default(autoincrement())
+
+  loginIp String
+  loginLocation String
+
+  browser String?
+
+  sessionHash String
+
+  accessToken String
+  refreshToken String
+
+  user   User @relation(fields: [userId], references: [id], name: "user_sessions")
+  userId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CreationUserRequest {
+  id Int @id @default(autoincrement())
+
+  username String @unique
+  email    String @unique
+
+  password String
+  salt     String
+
+  firstName String
+  lastName  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id Int @id @default(autoincrement())
+
+  username String @unique
+
+  firstName String
+  lastName  String
+
+  isDead Boolean @default(false)
+
+  deleted Boolean @default(false)
+  deletedReason DeleteReason?
+  deletedInfo String?
+
+  avatar String @default("default")
+  bio    String @default("Hello I am using fuck up, oh sorry, i mean suck down")
+
+  email    String @unique
+  password String
+  salt     String
+
+  authorization AuthorizationInfo? @relation(name: "user_authorization_info")
+
+  posts       Post[]        @relation(name: "user_posts")
+  sessions    AuthSession[] @relation(name: "user_sessions")
+  attachments Attachment[]  @relation(name: "user_attachments")
+  comments    Comment[]     @relation(name: "user_comments")
+  messages    Message[]     @relation(name: "user_messages")
+  likes       Post[]        @relation(name: "user_likes")
+  dialogs     Dialog[]      @relation(name: "user_dialogs")
+  chats       Chat[]        @relation(name: "user_chats")
+
+  reports Report[] @relation(name: "user_reports")
+
+  subscribers    User[] @relation(name: "user_subscribers")
+  subscribersRef User[] @relation(name: "user_subscribers")
+
+  groupsCreator Group[] @relation(name: "user_groupcreator")
+  groups Group[] @relation(name: "user_groups")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
